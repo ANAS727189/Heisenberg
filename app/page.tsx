@@ -9,38 +9,63 @@ export default function Home() {
   const startAttack = async () => {
     setLoading(true);
     setLogs(prev => [...prev, "Initialize Heisenberg Protocol..."]);
+    setScore(null); // Reset score
     
-    // 1. Start Flow
-    const startRes = await fetch('/api/start-attack', {
-        method: 'POST',
-        body: JSON.stringify({ targetUrl: "https://boom-heisenberg.vercel.app/api/victim" })
-    });
-    const { id } = await startRes.json(); // Get Execution ID
-    setLogs(prev => [...prev, `Flow Started: ID ${id}`]);
+    try {
+      // 1. Start Flow
+      const startRes = await fetch('/api/start-attack', {
+          method: 'POST',
+          body: JSON.stringify({ targetUrl: "https://boom-heisenberg.vercel.app/api/victim" })
+      });
+      
+      const startData = await startRes.json();
+      
+      // SAFETY CHECK: Did we get an ID?
+      if (!startRes.ok || !startData.id) {
+        console.error("Start failed:", startData);
+        setLogs(prev => [...prev, `❌ Error Starting Flow: ${startData.error || "Unknown Error"}`]);
+        setLoading(false);
+        return; // STOP HERE
+      }
 
-    // 2. Poll for Completion (Check status every 2s)
-    const poll = setInterval(async () => {
-        // You need a new API route to check status (see below)
-        const checkRes = await fetch(`/api/check-status?id=${id}`);
-        const data = await checkRes.json();
-        
-        if (data.state.current === "SUCCESS") {
-            clearInterval(poll);
+      const id = startData.id;
+      setLogs(prev => [...prev, `Flow Started: ID ${id}`]);
+
+      // 2. Poll for Completion
+      const poll = setInterval(async () => {
+          try {
+            const checkRes = await fetch(`/api/check-status?id=${id}`);
+            const data = await checkRes.json();
             
-            // Extract Score from Kestra Outputs
-            const outputs = data.outputs || {};
-            const scoreTask = outputs['dev.hackathon.heisenberg_protocol.calculate_score'] || {};
-            const score_t = scoreTask.vars ? scoreTask.vars.resilience_score : "Unknown";
-            setScore(parseInt(score_t, 10) || 0);
-            setLogs(prev => [...prev, "Analysis Complete."]);
-            setLogs(prev => [...prev, `🛡️ FINAL RESILIENCE SCORE: ${score}/100`]);
-            setLoading(false);
-        } else if (data.state.current === "FAILED") {
-            clearInterval(poll);
-            setLogs(prev => [...prev, "❌ Attack Process Failed."]);
-            setLoading(false);
-        }
-    }, 2000);
+            if (data.state.current === "SUCCESS") {
+                clearInterval(poll);
+                
+                // Extract Score
+                const outputs = data.outputs || {};
+                const scoreTask = outputs['calculate_score'] || {}; // NOTE: Check exact task ID in logs
+                // Kestra output keys can sometimes be simpler, check data structure
+                // Fallback search for score:
+                const vars = scoreTask.vars || {};
+                const score_t = vars.resilience_score || "0";
+                
+                setScore(parseInt(score_t, 10) || 0);
+                setLogs(prev => [...prev, "Analysis Complete."]);
+                setLogs(prev => [...prev, `🛡️ FINAL RESILIENCE SCORE: ${score_t}/100`]);
+                setLoading(false);
+            } else if (data.state.current === "FAILED") {
+                clearInterval(poll);
+                setLogs(prev => [...prev, "❌ Attack Process Failed."]);
+                setLoading(false);
+            }
+          } catch (err) {
+            console.error("Polling error", err);
+          }
+      }, 2000);
+
+    } catch (err) {
+      setLogs(prev => [...prev, "❌ Critical System Error"]);
+      setLoading(false);
+    }
   };
 
   return (
