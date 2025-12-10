@@ -1,0 +1,50 @@
+id: heisenberg_protocol
+namespace: dev.hackathon
+
+inputs:
+  - id: target_url
+    type: STRING
+    defaults: "https://boom-heisenberg.vercel.app/"
+
+tasks:
+  # STEP 1: The Strategist (Generates the attack script)
+  - id: generate_attack_script
+    type: io.kestra.plugin.scripts.python.Script
+    script: |
+      import os
+      
+      # The k6 script content
+      k6_script = """
+      import http from 'k6/http';
+      import { check, sleep } from 'k6';
+
+      export let options = {
+        stages: [
+          { duration: '5s', target: 5 }, 
+        ],
+      };
+
+      export default function () {
+        // Hitting the target with the chaos query
+        let res = http.get('{{ inputs.target_url }}?q=chaos'); 
+        check(res, { 'status was 200': (r) => r.status == 200 });
+        sleep(1);
+      }
+      """
+      
+      # Write to a file in the working directory
+      with open("attack.js", "w") as f:
+          f.write(k6_script)
+          
+    outputFiles:
+      - attack.js
+
+  # STEP 2: The Executor (Docker runs k6)
+  - id: launch_missiles
+    type: io.kestra.plugin.docker.Run
+    containerImage: grafana/k6
+    commands:
+      - run
+      - "{{ workingDir }}/attack.js"
+    inputFiles:
+      attack.js: "{{ outputs.generate_attack_script.outputFiles['attack.js'] }}"
