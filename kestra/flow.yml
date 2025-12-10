@@ -1,53 +1,67 @@
 id: heisenberg_protocol
 namespace: dev.hackathon
 
+triggers:
+  - id: attack_webhook
+    type: io.kestra.plugin.core.trigger.Webhook
+    key: "my-secret-hackathon-key"
+
 inputs:
   - id: target_url
     type: STRING
     defaults: "https://boom-heisenberg.vercel.app/api/victim"
 
 tasks:
-  # STEP 1: Generate Attack Script
+  # STEP 1: Generate Attack Script (Failsafe Mode)
   - id: generate_attack_script
     type: io.kestra.plugin.scripts.python.Script
     script: |
       import os
       
+      # 1. Get input safely
+      target = "{{ trigger.target_url ?? inputs.target_url }}"
+      
+      # 2. define placeholders to hide braces from Kestra
+      OPEN = "{"
+      CLOSE = "}"
+      
+      # 3. The JS Code (Using placeholders instead of real braces)
+      # We use __OPEN__ and __CLOSE__ so Kestra's parser stays calm.
       k6_script = """
       import http from 'k6/http';
-      import { check, sleep } from 'k6';
+      import __OPEN__ check, sleep __CLOSE__ from 'k6';
 
-      export let options = {
-        stages: [{ duration: '5s', target: 5 }],
-        thresholds: { 'http_req_failed': ['rate<0.1'] },
-      };
+      export let options = __OPEN__
+        stages: [__OPEN__ duration: '5s', target: 5 __CLOSE__],
+        thresholds: __OPEN__ 'http_req_failed': ['rate<0.1'] __CLOSE__,
+      __CLOSE__;
 
-      export default function () {
-        let res = http.get('{{ inputs.target_url }}?q=chaos'); 
-        check(res, { 'status was 200': (r) => r.status == 200 });
+      export default function () __OPEN__
+        let res = http.get('TARGET_URL?q=chaos'); 
+        check(res, __OPEN__ 'status was 200': (r) => r.status == 200 __CLOSE__);
         sleep(1);
-      }
+      __CLOSE__
       
-      export function handleSummary(data) {
-        return { 'summary.json': JSON.stringify(data) };
-      }
+      export function handleSummary(data) __OPEN__
+        return __OPEN__ 'summary.json': JSON.stringify(data) __CLOSE__;
+      __CLOSE__
       """
       
+      # 4. Reconstruct the real script
+      final_script = k6_script.replace("__OPEN__", OPEN).replace("__CLOSE__", CLOSE).replace("TARGET_URL", target)
+      
       with open("attack.js", "w") as f:
-          f.write(k6_script)
+          f.write(final_script)
+      
       os.chmod("attack.js", 0o777)
     outputFiles:
       - attack.js
 
-  # STEP 2: Run k6 (Allow Failure so we can score it)
   - id: launch_missiles
     type: io.kestra.plugin.docker.Run
     containerImage: grafana/k6
     user: root
-    
-    # 🟢 NEW: Allow the task to 'fail' (code 99) but keep the flow running
     allowFailure: true
-    
     commands:
       - run
       - "--summary-export={{ workingDir }}/summary.json"
@@ -57,25 +71,17 @@ tasks:
     outputFiles:
       - summary.json
 
-  # STEP 3: Calculate Score
   - id: calculate_score
     type: io.kestra.plugin.scripts.python.Script
     inputFiles:
       summary.json: "{{ outputs.launch_missiles.outputFiles['summary.json'] }}"
     script: |
       import json
-      
       try:
           with open("summary.json", "r") as f:
               data = json.load(f)
-          
-          # Metrics logic
           fail_rate = data['metrics']['http_req_failed']['values']['rate']
           score = int((1.0 - fail_rate) * 100)
-          
-          print(f"FAILURE RATE: {fail_rate}")
           print(f"::POUT key=resilience_score::{score}")
-          
-      except Exception as e:
-          print(f"Error calculating score: {e}")
+      except:
           print("::POUT key=resilience_score::0")

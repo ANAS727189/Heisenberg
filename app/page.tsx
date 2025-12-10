@@ -32,35 +32,38 @@ export default function Home() {
       setLogs(prev => [...prev, `Flow Started: ID ${id}`]);
 
       // 2. Poll for Completion
-      const poll = setInterval(async () => {
-          try {
-            const checkRes = await fetch(`/api/check-status?id=${id}`);
-            const data = await checkRes.json();
+     const poll = setInterval(async () => {
+        const checkRes = await fetch(`/api/check-status?id=${id}`);
+        const data = await checkRes.json();
+        
+        const state = data.state.current; // Get current state
+        console.log("Current State:", state); // Debug log
+
+        // FIX: Accept 'WARNING' as a success state too!
+        if (state === "SUCCESS" || state === "WARNING") {
+            clearInterval(poll);
             
-            if (data.state.current === "SUCCESS") {
-                clearInterval(poll);
-                
-                // Extract Score
-                const outputs = data.outputs || {};
-                const scoreTask = outputs['calculate_score'] || {}; // NOTE: Check exact task ID in logs
-                // Kestra output keys can sometimes be simpler, check data structure
-                // Fallback search for score:
-                const vars = scoreTask.vars || {};
-                const score_t = vars.resilience_score || "0";
-                
-                setScore(parseInt(score_t, 10) || 0);
-                setLogs(prev => [...prev, "Analysis Complete."]);
-                setLogs(prev => [...prev, `🛡️ FINAL RESILIENCE SCORE: ${score_t}/100`]);
-                setLoading(false);
-            } else if (data.state.current === "FAILED") {
-                clearInterval(poll);
-                setLogs(prev => [...prev, "❌ Attack Process Failed."]);
-                setLoading(false);
-            }
-          } catch (err) {
-            console.error("Polling error", err);
-          }
-      }, 2000);
+            // Extract Score
+            const outputs = data.outputs || {};
+            // The task ID might be slightly different, check your specific flow
+            const scoreTask = outputs['dev.hackathon.heisenberg_protocol.calculate_score'] || 
+                              outputs['calculate_score'] || {};
+            
+            // Safe extraction
+            const vars = scoreTask.vars || {};
+            const score_t = vars.resilience_score || "0";
+            
+            setScore(parseInt(score_t, 10) || 0);
+            setLogs(prev => [...prev, "Analysis Complete."]);
+            setLogs(prev => [...prev, `🛡️ FINAL RESILIENCE SCORE: ${score_t}/100`]);
+            setLoading(false);
+        } 
+        else if (state === "FAILED" || state === "KILLED") {
+            clearInterval(poll);
+            setLogs(prev => [...prev, "❌ Attack Process Failed."]);
+            setLoading(false);
+        }
+    }, 2000);
 
     } catch (err) {
       setLogs(prev => [...prev, "❌ Critical System Error"]);
