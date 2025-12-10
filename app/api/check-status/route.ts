@@ -5,22 +5,21 @@ export async function GET(request: Request) {
   const id = searchParams.get('id');
   const KESTRA_HOST = process.env.KESTRA_HOST?.replace(/\/$/, "");
 
-  // 1. Login again to get a fresh cookie (Simplest way for now)
-  const loginRes = await fetch(`${KESTRA_HOST}/api/v1/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-          username: "anas23khan083@gmail.com", 
-          password: "anaskhan083@Khan"
-      })
-  });
-  const cookieHeader = loginRes.headers.get('set-cookie') || "";
+  // YOUR CREDENTIALS
+  const username = "anas23khan083@gmail.com";
+  const password = "anaskhan083@Khan";
+  const authString = Buffer.from(`${username}:${password}`).toString('base64');
 
-  // 2. Fetch Status
   const res = await fetch(`${KESTRA_HOST}/api/v1/executions/${id}`, {
-      headers: { 'Cookie': cookieHeader }
+      headers: {
+          'Authorization': `Basic ${authString}`
+      }
   });
   
+  if (res.status === 401) {
+      return NextResponse.json({ state: { current: "UNAUTHORIZED" } }, { status: 401 });
+  }
+
   const data = await res.json();
   return NextResponse.json(data);
 }
