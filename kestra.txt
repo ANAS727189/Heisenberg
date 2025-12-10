@@ -1,0 +1,23 @@
+Stop the current container:
+
+Bash
+
+docker stop kestra && docker rm kestra
+Fix Socket Permissions (Crucial): Run this command to make the Docker socket accessible to everyone:
+
+Bash
+
+sudo chmod 666 /var/run/docker.sock
+Start Kestra as ROOT: Copy and paste this exact command. Note the --user root flag:
+
+Bash
+
+docker run -d --name kestra \
+  --user root \
+  -p 8080:8080 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /tmp:/tmp \
+  kestra/kestra:latest server local
+
+
+

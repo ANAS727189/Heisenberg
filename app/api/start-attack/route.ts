@@ -7,8 +7,13 @@ export async function POST(request: Request) {
 
     const KESTRA_HOST = process.env.KESTRA_HOST;
     
-    // Debug Log 1: Check Environment Variable
-    console.log("👉 KESTRA_HOST:", KESTRA_HOST);
+    // YOUR CREDENTIALS
+    // In production, put these in .env (KESTRA_USER, KESTRA_PASSWORD)
+    const username = "anas23khan083@gmail.com";
+    const password = "anaskhan083@Khan";
+    
+    // Create the Basic Auth Header: "Basic base64(user:pass)"
+    const authString = Buffer.from(`${username}:${password}`).toString('base64');
 
     if (!KESTRA_HOST) {
       return NextResponse.json({ error: "KESTRA_HOST env var is missing" }, { status: 500 });
@@ -17,27 +22,31 @@ export async function POST(request: Request) {
     const formData = new FormData();
     formData.append('target_url', targetUrl);
 
-    // Debug Log 2: Check URL construction
-    const kestraUrl = `${KESTRA_HOST}/api/v1/executions/dev.hackathon/heisenberg_protocol`;
+    // Note: Removed trailing slash from HOST if it exists to avoid double slash
+    const cleanHost = KESTRA_HOST.replace(/\/$/, "");
+    const kestraUrl = `${cleanHost}/api/v1/executions/dev.hackathon/heisenberg_protocol`;
+
     console.log("👉 Fetching:", kestraUrl);
 
     const response = await fetch(kestraUrl, {
       method: 'POST',
+      headers: {
+        // 🟢 THIS IS THE FIX: Send the credentials
+        'Authorization': `Basic ${authString}`
+        // Do NOT set Content-Type for FormData, fetch does it automatically
+      },
       body: formData,
     });
 
-    // Debug Log 3: Check Response Status
-    console.log("👉 Kestra Status:", response.status, response.statusText);
+    console.log("👉 Kestra Status:", response.status);
 
     if (!response.ok) {
-        // Log the text response (it might be an HTML error page from Github)
         const errorText = await response.text();
-        console.error("❌ Kestra Error Body:", errorText);
-        return NextResponse.json({ error: `Kestra returned ${response.status}: ${errorText}` }, { status: response.status });
+        console.error("❌ Kestra Error:", errorText);
+        return NextResponse.json({ error: errorText }, { status: response.status });
     }
 
     const data = await response.json();
-    console.log("✅ Kestra Success:", data);
     return NextResponse.json(data);
 
   } catch (e: any) {
