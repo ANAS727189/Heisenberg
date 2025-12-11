@@ -65,6 +65,18 @@ export default function Home() {
       const id = startData.id;
       setLogs(prev => [...prev, `Flow Started: ID ${id}`]);
 
+      // Simulate "Thinking" logs for the demo
+      setTimeout(() => {
+        setLogs(prev => [...prev, "📡 Intercepting traffic on port 443..."]);
+      }, 2000);
+      
+      setTimeout(() => {
+        setLogs(prev => [...prev, "⚠️ Anomaly Detected: High Request Rate"]);
+      }, 5000);
+
+      setTimeout(() => {
+        setLogs(prev => [...prev, "🤖 Agent Activated: Analyzing Codebase..."]);
+      }, 8000);
 
      const poll = setInterval(async () => {
         const checkRes = await fetch(`/api/check-status?id=${id}`);
@@ -86,6 +98,12 @@ export default function Home() {
             setScore(parseInt(score_t, 10) || 0);
             setLogs(prev => [...prev, "Analysis Complete."]);
             setLogs(prev => [...prev, `🛡️ FINAL RESILIENCE SCORE: ${score_t}/100`]);
+            
+            // Add the final "Fix" log
+            if (parseInt(score_t, 10) < 50) {
+               setLogs(prev => [...prev, "✅ Fix Deployed: PR Created."]);
+            }
+
             setLoading(false);
         } 
         else if (state === "FAILED" || state === "KILLED") {
@@ -128,7 +146,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold mb-4 uppercase flex items-center gap-2">
               <Activity className="w-6 h-6" /> Market Watch
             </h2>
-            <div className="h-48 w-full bg-white border border-black p-2">
+            <div className="h-48 w-full bg-white border border-black p-2" style={{ minHeight: '200px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trafficData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
@@ -150,7 +168,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold mb-4 uppercase flex items-center gap-2">
               <ShieldAlert className="w-6 h-6" /> Threat Index
             </h2>
-            <div className="h-48 w-full bg-white border border-black p-2">
+            <div className="h-48 w-full bg-white border border-black p-2" style={{ minHeight: '200px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={VULNERABILITY_DATA}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
