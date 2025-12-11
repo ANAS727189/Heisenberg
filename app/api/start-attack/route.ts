@@ -3,22 +3,26 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { targetUrl } = body;
+    // 1. Capture repo from frontend
+    const { targetUrl, repo } = body; 
+    
     const KESTRA_HOST = process.env.KESTRA_HOST?.replace(/\/$/, "");
-
-    // 🔑 THE SECRET KEY defined in your YAML
     const WEBHOOK_KEY = "my-secret-hackathon-key";
-
-    // NEW URL PATTERN: /api/v1/executions/webhook/{namespace}/{flowId}/{key}
+    
+    // 2. Construct Webhook URL
     const webhookUrl = `${KESTRA_HOST}/api/v1/executions/webhook/dev.hackathon/heisenberg_protocol/${WEBHOOK_KEY}`;
 
     console.log("👉 Triggering Webhook:", webhookUrl);
+    console.log("👉 Payload:", { target_url: targetUrl, repo_name: repo });
 
-    // Send data as JSON (Webhooks prefer JSON)
+    // 3. Send to Kestra (Passing both Target and Repo)
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target_url: targetUrl }) // Keys must match 'inputs' in YAML
+      body: JSON.stringify({ 
+          target_url: targetUrl,
+          repo_name: repo 
+      })
     });
 
     if (!response.ok) {
@@ -28,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log("✅ Webhook Success:", data);
+    console.log("✅ Webhook Success:", data.id);
     return NextResponse.json(data);
 
   } catch (e: any) {

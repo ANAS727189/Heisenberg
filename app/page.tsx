@@ -82,7 +82,8 @@ export default function Home() {
           defaultValue="https://boom-heisenberg.vercel.app/api/victim"
           className="w-full bg-gray-900 border border-green-800 p-4 rounded text-white"
         />
-
+      </div>
+      <div className="mb-8">
         <label className="block mb-2 text-gray-400">GitHub Repo (for reporting)</label>
         <input 
           type="text" 
