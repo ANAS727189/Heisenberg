@@ -5,51 +5,49 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [score, setScore] = useState<number | null>(null);
+  const [repoUrl, setRepoUrl] = useState("ANAS727189/heisenberg-backend");
 
   const startAttack = async () => {
     setLoading(true);
     setLogs(prev => [...prev, "Initialize Heisenberg Protocol..."]);
-    setScore(null); // Reset score
+    setScore(null); 
     
     try {
-      // 1. Start Flow
       const startRes = await fetch('/api/start-attack', {
           method: 'POST',
-          body: JSON.stringify({ targetUrl: "https://boom-heisenberg.vercel.app/api/victim" })
+          body: JSON.stringify({ 
+            targetUrl: "https://boom-heisenberg.vercel.app/api/victim",
+            repoUrl: repoUrl
+          })
       });
       
       const startData = await startRes.json();
-      
-      // SAFETY CHECK: Did we get an ID?
+
       if (!startRes.ok || !startData.id) {
         console.error("Start failed:", startData);
         setLogs(prev => [...prev, `❌ Error Starting Flow: ${startData.error || "Unknown Error"}`]);
         setLoading(false);
-        return; // STOP HERE
+        return; 
       }
 
       const id = startData.id;
       setLogs(prev => [...prev, `Flow Started: ID ${id}`]);
 
-      // 2. Poll for Completion
+
      const poll = setInterval(async () => {
         const checkRes = await fetch(`/api/check-status?id=${id}`);
         const data = await checkRes.json();
         
-        const state = data.state.current; // Get current state
-        console.log("Current State:", state); // Debug log
+        const state = data.state.current; 
+        console.log("Current State:", state); 
 
-        // FIX: Accept 'WARNING' as a success state too!
         if (state === "SUCCESS" || state === "WARNING") {
             clearInterval(poll);
-            
-            // Extract Score
+
             const outputs = data.outputs || {};
-            // The task ID might be slightly different, check your specific flow
             const scoreTask = outputs['dev.hackathon.heisenberg_protocol.calculate_score'] || 
                               outputs['calculate_score'] || {};
-            
-            // Safe extraction
+
             const vars = scoreTask.vars || {};
             const score_t = vars.resilience_score || "0";
             
@@ -82,6 +80,14 @@ export default function Home() {
         <input 
           type="text" 
           defaultValue="https://boom-heisenberg.vercel.app/api/victim"
+          className="w-full bg-gray-900 border border-green-800 p-4 rounded text-white"
+        />
+
+        <label className="block mb-2 text-gray-400">GitHub Repo (for reporting)</label>
+        <input 
+          type="text" 
+          value={repoUrl}
+          onChange={(e) => setRepoUrl(e.target.value)}
           className="w-full bg-gray-900 border border-green-800 p-4 rounded text-white"
         />
       </div>

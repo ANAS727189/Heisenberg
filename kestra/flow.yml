@@ -10,6 +10,9 @@ inputs:
   - id: target_url
     type: STRING
     defaults: "https://boom-heisenberg.vercel.app/api/victim"
+  - id: repo_name
+    type: STRING
+    defaults: "ANAS727189/heisenberg-backend"
 
 tasks:
   # STEP 1: Generate Attack Script (Failsafe Mode)
@@ -85,3 +88,34 @@ tasks:
           print(f"::POUT key=resilience_score::{score}")
       except:
           print("::POUT key=resilience_score::0")
+  
+  - id: create_github_issue
+    type: io.kestra.plugin.scripts.python.Script
+    script: |
+      import urllib.request
+      import json
+      
+      # 1. Credentials & Config
+      TOKEN = "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"
+      REPO = "{{ trigger.repo_name ?? inputs.repo_name }}" 
+      
+      url = f"https://api.github.com/repos/{REPO}/issues"
+      
+      # 2. Prepare Data
+      payload = {
+          "title": "🚨 Heisenberg Alert: Critical Vulnerability Detected",
+          "body": "Heisenberg Protocol detected a 500 Error spike on /api/victim.\n\n**Recommendation:** Implement Rate Limiting."
+      }
+      json_data = json.dumps(payload).encode("utf-8")
+      
+      # 3. Send Request (Using Native urllib - No pip install needed)
+      req = urllib.request.Request(url, data=json_data, method="POST")
+      req.add_header("Authorization", f"token {TOKEN}")
+      req.add_header("Accept", "application/vnd.github.v3+json")
+      req.add_header("Content-Type", "application/json")
+      
+      try:
+          with urllib.request.urlopen(req) as response:
+              print(f"GitHub Issue Created! Response Code: {response.getcode()}")
+      except urllib.error.HTTPError as e:
+          print(f"GitHub Error: {e.code} - {e.read().decode()}")
