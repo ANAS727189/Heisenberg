@@ -5,7 +5,6 @@ import { ShieldAlert, Activity, Terminal, Lock, Globe, Rabbit, Info, X } from 'l
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 
-// Mock data for the graphs
 const MOCK_TRAFFIC_DATA = Array.from({ length: 20 }, (_, i) => ({
   time: i,
   requests: Math.floor(Math.random() * 100) + 50,
@@ -36,7 +35,6 @@ export default function Home() {
     }
   }, [showConfetti]);
 
-  // Simulate live traffic updates
   useEffect(() => {
     const interval = setInterval(() => {
       setTrafficData(prev => {
