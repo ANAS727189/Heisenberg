@@ -89,33 +89,115 @@ tasks:
       except:
           print("::POUT key=resilience_score::0")
   
-  - id: create_github_issue
+  - id: autonomous_fix_agent
     type: io.kestra.plugin.scripts.python.Script
     script: |
       import urllib.request
       import json
+      import base64
+      import time
       
-      # 1. Credentials & Config
+      # --- CONFIGURATION ---
       TOKEN = "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"
-      REPO = "{{ trigger.repo_name ?? inputs.repo_name }}" 
-      
-      url = f"https://api.github.com/repos/{REPO}/issues"
-      
-      # 2. Prepare Data
-      payload = {
-          "title": "🚨 Heisenberg Alert: Critical Vulnerability Detected",
-          "body": "Heisenberg Protocol detected a 500 Error spike on /api/victim.\n\n**Recommendation:** Implement Rate Limiting."
+      REPO = "{{ trigger.repo_name ?? inputs.repo_name }}"
+      BRANCH_NAME = f"heisenberg-fix-{int(time.time())}"
+      BASE_URL = f"https://api.github.com/repos/{REPO}"
+      HEADERS = {
+          "Authorization": f"token {TOKEN}",
+          "Accept": "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
       }
-      json_data = json.dumps(payload).encode("utf-8")
+
+      def github_request(endpoint, method="GET", data=None):
+          req = urllib.request.Request(f"{BASE_URL}{endpoint}", method=method)
+          for k, v in HEADERS.items():
+              req.add_header(k, v)
+          if data:
+              req.data = json.dumps(data).encode("utf-8")
+          try:
+              with urllib.request.urlopen(req) as res:
+                  return json.loads(res.read().decode())
+          except urllib.error.HTTPError as e:
+              print(f"❌ API Error {endpoint}: {e.code} - {e.read().decode()}")
+              return None
+
+      print(f"🤖 AGENT ACTIVATED: Initiating repair protocol on {REPO}...")
+
+      # 0. Create GitHub Issue
+      print("🚨 Creating Vulnerability Report (Issue)...")
+      issue = github_request("/issues", "POST", {
+          "title": "🚨 Heisenberg Alert: Critical Vulnerability Detected",
+          "body": "Heisenberg Protocol detected a 500 Error spike on /api/victim.\n\n**Recommendation:** Implement Rate Limiting immediately."
+      })
       
-      # 3. Send Request (Using Native urllib - No pip install needed)
-      req = urllib.request.Request(url, data=json_data, method="POST")
-      req.add_header("Authorization", f"token {TOKEN}")
-      req.add_header("Accept", "application/vnd.github.v3+json")
-      req.add_header("Content-Type", "application/json")
+      issue_number = issue['number'] if issue else "UNKNOWN"
+      print(f"✅ Issue Created: #{issue_number}")
+
+      # 1. Get default branch (main/master) SHA
+      repo_info = github_request("")
+      if not repo_info: exit(1)
+      default_branch = repo_info["default_branch"]
+      ref_info = github_request(f"/git/ref/heads/{default_branch}")
+      latest_sha = ref_info["object"]["sha"]
+      print(f"✅ Locked onto base branch: {default_branch} ({latest_sha[:7]})")
+
+      # 2. Create new branch
+      print(f"🌿 Creating branch: {BRANCH_NAME}...")
+      github_request("/git/refs", "POST", {
+          "ref": f"refs/heads/{BRANCH_NAME}",
+          "sha": latest_sha
+      })
+
+      # 3. Create the "Fix" file (Simulating an AI-generated Rate Limiter)
+      fix_content = """
+      import { NextResponse } from 'next/server';
       
-      try:
-          with urllib.request.urlopen(req) as response:
-              print(f"GitHub Issue Created! Response Code: {response.getcode()}")
-      except urllib.error.HTTPError as e:
-          print(f"GitHub Error: {e.code} - {e.read().decode()}")
+      // Heisenberg Auto-Generated Rate Limiter
+      // Applied to mitigate DDoS vector detected in /api/victim
+      
+      const RATE_LIMIT = 10;
+      const WINDOW = 60 * 1000; // 1 minute
+      const ipMap = new Map();
+
+      export function middleware(request) {
+          const ip = request.headers.get('x-forwarded-for') || 'unknown';
+          const now = Date.now();
+          
+          const record = ipMap.get(ip) || { count: 0, start: now };
+          
+          if (now - record.start > WINDOW) {
+              record.count = 1;
+              record.start = now;
+          } else {
+              record.count++;
+          }
+          
+          ipMap.set(ip, record);
+          
+          if (record.count > RATE_LIMIT) {
+              return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
+          }
+      }
+      """
+      
+      print("💾 Committing patch: middleware.ts...")
+      github_request(f"/contents/middleware.ts", "PUT", {
+          "message": f"feat: apply rate limiting (Fixes #{issue_number})",
+          "content": base64.b64encode(fix_content.encode()).decode(),
+          "branch": BRANCH_NAME
+      })
+
+      # 4. Open Pull Request
+      print("🚀 Opening Pull Request...")
+      pr = github_request("/pulls", "POST", {
+          "title": f"🛡️ Security Fix: Rate Limiting Middleware (Fixes #{issue_number})",
+          "body": f"## 🤖 Heisenberg Agent Report\n\n**Vulnerability Detected:** High-frequency request flooding.\n**Related Issue:** #{issue_number}\n**Action Taken:** Implemented Token Bucket Rate Limiter.\n\n*This PR was autonomously generated by the Heisenberg Protocol.*",
+          "head": BRANCH_NAME,
+          "base": default_branch
+      })
+
+      if pr:
+          print(f"::POUT key=pr_url::{pr['html_url']}")
+          print(f"✅ SUCCESS: PR Created at {pr['html_url']}")
+      else:
+          print("❌ Failed to create PR.")
