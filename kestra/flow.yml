@@ -133,6 +133,9 @@ tasks:
       issue_number = issue['number'] if issue else "UNKNOWN"
       print(f"✅ Issue Created: #{issue_number}")
 
+      print("⏳ Analyzing codebase for potential fixes... (5s)")
+      time.sleep(5)
+
       # 1. Get default branch (main/master) SHA
       repo_info = github_request("")
       if not repo_info: exit(1)
