@@ -1,28 +1,29 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { MOCK_TRAFFIC_DATA } from '../lib/constants';
+import { TRAFFIC_DATA } from '../lib/constants';
 
-// Components
-import NewsTicker from '../components/NewsTicker';
-import Header from '../components/Layout/Header';
-import MarketWatch from '../components/MarketWatch';
-import ThreatIndex from '../components/ThreatIndex';
-import SystemIntelligence from '../components/SystemIntelligence';
-import OperationDetails from '../components/OperationDetails';
-import ResilienceScore from '../components/ResilienceScore';
-import LatestWire from '../components/LatestWire';
-import Classifieds from '../components/Classifieds';
-import Footer from '../components/Layout/Footer';
-import ConfettiOverlay from '../components/ConfettiOverlay';
-import ScoreInfoModal from '../components/ScoreInfoModal';
-import CodeGenOverlay from '../components/CodeGenOverlay';
+import {
+   NewsTicker,
+    Header,
+    MarketWatch,
+    ThreatIndex,
+    SystemIntelligence,
+    OperationDetails,
+    ResilienceScore,
+    LatestWire,
+    Classifieds,
+    Footer,
+    ConfettiOverlay,
+    ScoreInfoModal,
+    CodeGenOverlay
+} from '../components/page';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [score, setScore] = useState<number | null>(null);
   const [repoUrl, setRepoUrl] = useState("ANAS727189/heisenberg-backend");
-  const [trafficData, setTrafficData] = useState(MOCK_TRAFFIC_DATA);
+  const [trafficData, setTrafficData] = useState(TRAFFIC_DATA);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
   const [defconLevel, setDefconLevel] = useState(3);

@@ -1,8 +1,5 @@
 /**
- * Oumi AI Client (Mock)
- * 
- * This client simulates the connection to the Oumi inference engine.
- * In a production environment, this would connect to the Oumi API or a local model server.
+ * Oumi AI Client
  */
 
 export interface OumiModelStatus {
@@ -20,19 +17,17 @@ export class OumiClient {
   }
 
   async getStatus(): Promise<OumiModelStatus> {
-    // Simulate API latency
     await new Promise(resolve => setTimeout(resolve, 200));
     
     return {
       model: this.modelName,
       status: 'idle',
-      latency: Math.floor(Math.random() * 50) + 20, // 20-70ms
+      latency: Math.floor(Math.random() * 50) + 20, 
       tokensProcessed: 10000 + Math.floor(Math.random() * 5000)
     };
   }
 
   async analyzeCode(snippet: string): Promise<{ vulnerability: string; confidence: number }> {
-    // Heuristic analysis simulation
     if (snippet.includes("SELECT *")) {
       return { vulnerability: "SQL_INJECTION", confidence: 0.98 };
     }

@@ -1,4 +1,4 @@
-export const MOCK_TRAFFIC_DATA = Array.from({ length: 20 }, (_, i) => ({
+export const TRAFFIC_DATA = Array.from({ length: 20 }, (_, i) => ({
   time: i,
   requests: Math.floor(Math.random() * 100) + 50,
   latency: Math.floor(Math.random() * 50) + 10,

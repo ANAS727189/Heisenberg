@@ -105,15 +105,15 @@ tasks:
       
       # --- OUMI REAL INTEGRATION ---
       try:
-          print("📦 Importing Oumi Library...")
+          print("Importing Oumi Library...")
           from oumi.core.types.conversation import Conversation, Message, Role
           from oumi.core.configs import ModelParams
           # We import the engine interface to show real usage
           # from oumi.inference import NativeTextInferenceEngine 
           OUMI_INSTALLED = True
-          print("✅ Oumi Library Loaded Successfully.")
+          print("Oumi Library Loaded Successfully.")
       except ImportError as e:
-          print(f"⚠️ Oumi Import Failed: {e}")
+          print(f"Oumi Import Failed: {e}")
           OUMI_INSTALLED = False
 
       # --- CONFIGURATION ---
@@ -149,15 +149,15 @@ tasks:
       class OumiAgent:
           def __init__(self, model="oumi-tuned-7b"):
               self.model = model
-              print(f"🧠 Initializing Oumi Agent [Model: {self.model}]...")
+              print(f"Initializing Oumi Agent [Model: {self.model}]...")
               
               if OUMI_INSTALLED:
                   # REAL OUMI USAGE: Configure Model Parameters
                   self.model_params = ModelParams(model_name=model)
-                  print(f"ℹ️ Oumi Model Configured: {self.model_params}")
+                  print(f"Oumi Model Configured: {self.model_params}")
 
           def analyze_repository(self, files):
-              print(f"🔍 Oumi Agent scanning {len(files)} files...")
+              print(f"Oumi Agent scanning {len(files)} files...")
               
               # REAL OUMI USAGE: Constructing the Conversation Object
               if OUMI_INSTALLED:
@@ -173,8 +173,8 @@ tasks:
                           Message(role=Role.USER, content=prompt_content)
                       ]
                   )
-                  print(f"📨 Oumi Conversation Constructed: {len(conversation.messages)} message(s)")
-                  print(f"🤖 Cline Protocol Active: System Prompt injected.")
+                  print(f"Oumi Conversation Constructed: {len(conversation.messages)} message(s)")
+                  print(f"Cline Protocol Active: System Prompt injected.")
                   # In a GPU environment, we would call: engine.infer([conversation])
 
               findings = []
@@ -199,7 +199,7 @@ tasks:
               return findings
 
           def generate_fix(self, finding):
-              print(f"💡 Oumi Agent generating fix for {finding['type']}...")
+              print(f"Oumi Agent generating fix for {finding['type']}...")
               
               # REAL OUMI USAGE: Prompting for a fix
               if OUMI_INSTALLED:
@@ -212,7 +212,7 @@ tasks:
                           Message(role=Role.USER, content=cline_task)
                       ]
                   )
-                  print(f"🛠️ Oumi Fix Prompt Generated (Cline Protocol): {fix_prompt}")
+                  print(f"Oumi Fix Prompt Generated (Cline Protocol): {fix_prompt}")
 
               if finding['type'] == "MISSING_RATE_LIMITER":
                   return """
@@ -257,7 +257,7 @@ tasks:
               with urllib.request.urlopen(req) as res:
                   return json.loads(res.read().decode())
           except urllib.error.HTTPError as e:
-              print(f"❌ API Error {endpoint}: {e.code} - {e.read().decode()}")
+              print(f"API Error {endpoint}: {e.code} - {e.read().decode()}")
               return None
 
       # --- MAIN EXECUTION FLOW ---
@@ -267,7 +267,7 @@ tasks:
       # 1. Fetch "middleware.ts" to analyze (Simulating a fetch)
       # In a real scenario, we would list files and fetch them.
       # For this demo, we assume we are checking middleware.ts
-      print("📥 Fetching codebase context...")
+      print("Fetching codebase context...")
       try:
           # Try to get existing middleware, or assume it's empty/missing
           mw_res = github_request("/contents/middleware.ts")
@@ -284,16 +284,16 @@ tasks:
       findings = agent.analyze_repository(files)
       
       if not findings:
-          print("✅ Oumi Agent: No critical vulnerabilities detected.")
+          print("Oumi Agent: No critical vulnerabilities detected.")
           exit(0)
 
       finding = findings[0]
-      print(f"⚠️ DETECTED: {finding['type']} in {finding['file']}")
+      print(f"DETECTED: {finding['type']} in {finding['file']}")
 
       # 3. Create Issue
-      print("🚨 Creating Vulnerability Report...")
+      print("Creating Vulnerability Report...")
       issue = github_request("/issues", "POST", {
-          "title": f"🚨 Oumi Alert: {finding['type']} Detected",
+          "title": f"Oumi Alert: {finding['type']} Detected",
           "body": f"**Oumi Agent Report**\n\nModel: `oumi-tuned-7b`\nConfidence: `{finding['confidence']}`\n\nDetected a critical security gap in `{finding['file']}`. System is vulnerable to high-velocity attacks."
       })
       issue_number = issue['number'] if issue else "UNKNOWN"
@@ -307,13 +307,13 @@ tasks:
       ref_info = github_request(f"/git/ref/heads/{default_branch}")
       latest_sha = ref_info["object"]["sha"]
 
-      print(f"🌿 Creating branch: {BRANCH_NAME}...")
+      print(f"Creating branch: {BRANCH_NAME}...")
       github_request("/git/refs", "POST", {
           "ref": f"refs/heads/{BRANCH_NAME}",
           "sha": latest_sha
       })
 
-      print(f"💾 Committing patch to {finding['file']}...")
+      print(f"Committing patch to {finding['file']}...")
       github_request(f"/contents/{finding['file']}", "PUT", {
           "message": f"fix: auto-patch {finding['type']} (Oumi Agent)",
           "content": base64.b64encode(fix_code.encode()).decode(),
@@ -321,15 +321,15 @@ tasks:
           "sha": mw_res['sha'] if 'mw_res' in locals() and mw_res else None
       })
 
-      print("🚀 Opening Pull Request...")
+      print("Opening Pull Request...")
       pr = github_request("/pulls", "POST", {
-          "title": f"🛡️ Security Fix: {finding['type']} (Oumi Agent)",
-          "body": f"## 🤖 Oumi Agent Report\n\n**Vulnerability:** {finding['type']}\n**Fix Strategy:** Rate Limiting Middleware\n**Model:** Oumi-Tuned-7B\n\n*Autonomously generated by Heisenberg Protocol.*",
+          "title": f"Security Fix: {finding['type']} (Oumi Agent)",
+          "body": f"## Oumi Agent Report\n\n**Vulnerability:** {finding['type']}\n**Fix Strategy:** Rate Limiting Middleware\n**Model:** Oumi-Tuned-7B\n\n*Autonomously generated by Heisenberg Protocol.*",
           "head": BRANCH_NAME,
           "base": default_branch
       })
 
       if pr:
           print(f"::POUT key=pr_url::{pr['html_url']}")
-          print(f"✅ SUCCESS: PR Created at {pr['html_url']}")
+          print(f"SUCCESS: PR Created at {pr['html_url']}")
 
