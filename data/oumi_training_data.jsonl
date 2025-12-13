@@ -1,0 +1,3 @@
+{"instruction": "Analyze the following system log for vulnerabilities.", "input": "Error: 500 Internal Server Error at /api/victim. Database lock timeout.", "output": "Vulnerability: Database Locking. Fix: Implement Rate Limiting Middleware to reduce concurrency."}
+{"instruction": "Generate a fix for high traffic spikes.", "input": "Traffic spike detected. Latency > 2000ms.", "output": "Action: Apply Token Bucket Rate Limiter. Limit: 100 req/min."}
+{"instruction": "Review code for security flaws.", "input": "const user = db.query('SELECT * FROM users WHERE id = ' + req.query.id);", "output": "Vulnerability: SQL Injection. Fix: Use parameterized queries."}

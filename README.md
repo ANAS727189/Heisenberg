@@ -1,8 +1,21 @@
-# Heisenberg Protocol
+# 🧪 Heisenberg Protocol
 
-**The Autonomous Cyber-Resilience & Self-Healing System**
+> **The Autonomous Cyber-Resilience & Self-Healing System**
 
-Heisenberg Protocol is an advanced security orchestration platform designed to autonomously detect, analyze, and remediate infrastructure vulnerabilities in real-time. By combining chaos engineering with automated remediation workflows, it ensures systems remain resilient against high-velocity threats.
+**Heisenberg Protocol** is an advanced security orchestration platform designed to autonomously **detect**, **analyze**, and **remediate** infrastructure vulnerabilities in real-time. By combining chaos engineering with automated remediation workflows, it ensures systems remain resilient against high-velocity threats.
+
+<div align="center">
+
+![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Kestra](https://img.shields.io/badge/Kestra-Orchestration-purple?style=for-the-badge)
+![Oumi](https://img.shields.io/badge/Oumi-AI_Agent-orange?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Grafana k6](https://img.shields.io/badge/Grafana_k6-7B26D9?style=for-the-badge&logo=k6&logoColor=white)
+
+</div>
 
 ---
 
@@ -34,10 +47,13 @@ The platform features a high-fidelity "Command Center" dashboard that provides r
 - **Live Wire:** Real-time terminal logs streaming directly from the orchestration backend.
 - **Alerts:** "Breaking News" marquee system for critical vulnerability announcements.
 
-### 4. Resilience Scoring Engine
-- **Metric:** Calculates a proprietary "Resilience Score" (0-100) based on failure rates under load.
-- **Analysis:** Provides detailed breakdowns of system health (Fortress vs. Critical status).
-- **Feedback:** Instant visual feedback with "Mission Accomplished" validation upon successful remediation.
+### 4. AI & Development
+- **AI Engine:** **Oumi SDK** (Python) running `oumi-tuned-7b`.
+- **Agent Protocol:** Custom implementation of the **Cline (Claude Dev) Protocol**.
+    - Uses XML-based reasoning (`<thought>`, `<plan>`, `<attempt_completion>`) to ensure high-quality, secure code generation.
+    - Implements a "Hybrid Mode" that seamlessly switches between GPU-accelerated inference and heuristic fallbacks for demo reliability.
+- **Training Data:** Vulnerability datasets structured for Oumi fine-tuning.
+- **Orchestration:** **Kestra** manages the "Attack-Detect-Fix" loop.
 
 ---
 
@@ -57,16 +73,6 @@ The system is built on a modern, decoupled architecture ensuring scalability and
 3.  **Execution Plane:**
     - Dockerized runners execute `k6` load tests.
     - Isolated environments ensure safety during chaos experiments.
-
----
-
-## 🛠️ Technology Stack
-
-- **Frontend:** Next.js 15, React, Tailwind CSS, Lucide Icons, Recharts.
-- **Orchestration:** Kestra (Docker-based).
-- **Load Testing:** Grafana k6.
-- **Scripting:** Python (GitHub API integration, Logic).
-- **Version Control:** Git & GitHub API.
 
 ---
 

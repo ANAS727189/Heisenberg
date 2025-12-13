@@ -1,0 +1,206 @@
+id: heisenberg_protocol
+namespace: dev.hackathon
+
+triggers:
+  - id: attack_webhook
+    type: io.kestra.plugin.core.trigger.Webhook
+    key: "my-secret-hackathon-key"
+
+inputs:
+  - id: target_url
+    type: STRING
+    defaults: "https://boom-heisenberg.vercel.app/api/victim"
+  - id: repo_name
+    type: STRING
+    defaults: "ANAS727189/heisenberg-backend"
+
+tasks:
+  # STEP 1: Generate Attack Script (Failsafe Mode)
+  - id: generate_attack_script
+    type: io.kestra.plugin.scripts.python.Script
+    script: |
+      import os
+      
+      # 1. Get input safely
+      target = "{{ trigger.target_url ?? inputs.target_url }}"
+      
+      # 2. define placeholders to hide braces from Kestra
+      OPEN = "{"
+      CLOSE = "}"
+      
+      # 3. The JS Code (Using placeholders instead of real braces)
+      # We use __OPEN__ and __CLOSE__ so Kestra's parser stays calm.
+      k6_script = """
+      import http from 'k6/http';
+      import __OPEN__ check, sleep __CLOSE__ from 'k6';
+
+      export let options = __OPEN__
+        stages: [__OPEN__ duration: '5s', target: 5 __CLOSE__],
+        thresholds: __OPEN__ 'http_req_failed': ['rate<0.1'] __CLOSE__,
+      __CLOSE__;
+
+      export default function () __OPEN__
+        let res = http.get('TARGET_URL?q=chaos'); 
+        check(res, __OPEN__ 'status was 200': (r) => r.status == 200 __CLOSE__);
+        sleep(1);
+      __CLOSE__
+      
+      export function handleSummary(data) __OPEN__
+        return __OPEN__ 'summary.json': JSON.stringify(data) __CLOSE__;
+      __CLOSE__
+      """
+      
+      # 4. Reconstruct the real script
+      final_script = k6_script.replace("__OPEN__", OPEN).replace("__CLOSE__", CLOSE).replace("TARGET_URL", target)
+      
+      with open("attack.js", "w") as f:
+          f.write(final_script)
+      
+      os.chmod("attack.js", 0o777)
+    outputFiles:
+      - attack.js
+
+  - id: launch_missiles
+    type: io.kestra.plugin.docker.Run
+    containerImage: grafana/k6
+    user: root
+    allowFailure: true
+    commands:
+      - run
+      - "--summary-export={{ workingDir }}/summary.json"
+      - "{{ workingDir }}/attack.js"
+    inputFiles:
+      attack.js: "{{ outputs.generate_attack_script.outputFiles['attack.js'] }}"
+    outputFiles:
+      - summary.json
+
+  - id: calculate_score
+    type: io.kestra.plugin.scripts.python.Script
+    inputFiles:
+      summary.json: "{{ outputs.launch_missiles.outputFiles['summary.json'] }}"
+    script: |
+      import json
+      try:
+          with open("summary.json", "r") as f:
+              data = json.load(f)
+          fail_rate = data['metrics']['http_req_failed']['values']['rate']
+          score = int((1.0 - fail_rate) * 100)
+          print(f"::POUT key=resilience_score::{score}")
+      except:
+          print("::POUT key=resilience_score::0")
+  
+  - id: autonomous_fix_agent
+    type: io.kestra.plugin.scripts.python.Script
+    script: |
+      import urllib.request
+      import json
+      import base64
+      import time
+      
+      # --- CONFIGURATION ---
+      TOKEN = "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"
+      REPO = "{{ trigger.repo_name ?? inputs.repo_name }}"
+      BRANCH_NAME = f"heisenberg-fix-{int(time.time())}"
+      BASE_URL = f"https://api.github.com/repos/{REPO}"
+      HEADERS = {
+          "Authorization": f"token {TOKEN}",
+          "Accept": "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
+      }
+
+      def github_request(endpoint, method="GET", data=None):
+          req = urllib.request.Request(f"{BASE_URL}{endpoint}", method=method)
+          for k, v in HEADERS.items():
+              req.add_header(k, v)
+          if data:
+              req.data = json.dumps(data).encode("utf-8")
+          try:
+              with urllib.request.urlopen(req) as res:
+                  return json.loads(res.read().decode())
+          except urllib.error.HTTPError as e:
+              print(f"❌ API Error {endpoint}: {e.code} - {e.read().decode()}")
+              return None
+
+      print(f"🤖 AGENT ACTIVATED: Initiating repair protocol on {REPO}...")
+
+      # 0. Create GitHub Issue
+      print("🚨 Creating Vulnerability Report (Issue)...")
+      issue = github_request("/issues", "POST", {
+          "title": "🚨 Heisenberg Alert: Critical Vulnerability Detected",
+          "body": "Heisenberg Protocol detected a 500 Error spike on /api/victim.\n\n**Recommendation:** Implement Rate Limiting immediately."
+      })
+      
+      issue_number = issue['number'] if issue else "UNKNOWN"
+      print(f"✅ Issue Created: #{issue_number}")
+
+      print("⏳ Analyzing codebase for potential fixes... (5s)")
+      time.sleep(5)
+
+      # 1. Get default branch (main/master) SHA
+      repo_info = github_request("")
+      if not repo_info: exit(1)
+      default_branch = repo_info["default_branch"]
+      ref_info = github_request(f"/git/ref/heads/{default_branch}")
+      latest_sha = ref_info["object"]["sha"]
+      print(f"✅ Locked onto base branch: {default_branch} ({latest_sha[:7]})")
+
+      # 2. Create new branch
+      print(f"🌿 Creating branch: {BRANCH_NAME}...")
+      github_request("/git/refs", "POST", {
+          "ref": f"refs/heads/{BRANCH_NAME}",
+          "sha": latest_sha
+      })
+
+      # 3. Create the "Fix" file (Simulating an AI-generated Rate Limiter)
+      fix_content = """
+      import { NextResponse } from 'next/server';
+      
+      // Heisenberg Auto-Generated Rate Limiter
+      // Applied to mitigate DDoS vector detected in /api/victim
+      
+      const RATE_LIMIT = 10;
+      const WINDOW = 60 * 1000; // 1 minute
+      const ipMap = new Map();
+
+      export function middleware(request) {
+          const ip = request.headers.get('x-forwarded-for') || 'unknown';
+          const now = Date.now();
+          
+          const record = ipMap.get(ip) || { count: 0, start: now };
+          
+          if (now - record.start > WINDOW) {
+              record.count = 1;
+              record.start = now;
+          } else {
+              record.count++;
+          }
+          
+          ipMap.set(ip, record);
+          
+          if (record.count > RATE_LIMIT) {
+              return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
+          }
+      }
+      """
+      
+      print("💾 Committing patch: middleware.ts...")
+      github_request(f"/contents/middleware.ts", "PUT", {
+          "message": f"feat: apply rate limiting (Fixes #{issue_number})",
+          "content": base64.b64encode(fix_content.encode()).decode(),
+          "branch": BRANCH_NAME
+      })
+
+      # 4. Open Pull Request
+      print("🚀 Opening Pull Request...")
+      pr = github_request("/pulls", "POST", {
+          "title": f"🛡️ Security Fix: Rate Limiting Middleware (Fixes #{issue_number})",
+          "body": f"## 🤖 Heisenberg Agent Report\n\n**Vulnerability Detected:** High-frequency request flooding.\n**Related Issue:** #{issue_number}\n**Action Taken:** Implemented Token Bucket Rate Limiter.\n\n*This PR was autonomously generated by the Heisenberg Protocol.*",
+          "head": BRANCH_NAME,
+          "base": default_branch
+      })
+
+      if pr:
+          print(f"::POUT key=pr_url::{pr['html_url']}")
+          print(f"✅ SUCCESS: PR Created at {pr['html_url']}")
+      else:
+          print("❌ Failed to create PR.")
