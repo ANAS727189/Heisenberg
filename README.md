@@ -1,4 +1,4 @@
-# 🧪 Heisenberg Protocol
+# Heisenberg Protocol
 
 > **The Autonomous Cyber-Resilience & Self-Healing System**
 
@@ -19,7 +19,17 @@
 
 ---
 
-## 🛡️ System Overview
+## Table of Contents
+
+- [System Overview](#system-overview)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Usage Guide](#usage-guide)
+- [License](#license)
+
+---
+
+## System Overview
 
 Heisenberg operates as a closed-loop security agent. It proactively stress-tests target endpoints, analyzes performance degradation, and autonomously deploys code fixes via GitHub Pull Requests without human intervention.
 
@@ -27,7 +37,7 @@ The platform features a high-fidelity "Command Center" dashboard that provides r
 
 ![Command Center Dashboard](public/alert-view.png)
 
-## ✨ Key Features
+## Key Features
 
 ### 1. Autonomous Chaos Injection
 - **Engine:** Powered by **Grafana k6** running in isolated Docker containers.
@@ -57,7 +67,7 @@ The platform features a high-fidelity "Command Center" dashboard that provides r
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 The system is built on a modern, decoupled architecture ensuring scalability and isolation:
 
@@ -76,7 +86,7 @@ The system is built on a modern, decoupled architecture ensuring scalability and
 
 ---
 
-## 🚀 Usage Guide
+## Usage Guide
 
 1.  **Access the Dashboard:** Navigate to the main interface.
 2.  **Configure Target:** Enter the Target URL and the GitHub Repository to monitor.
@@ -90,5 +100,9 @@ The system is built on a modern, decoupled architecture ensuring scalability and
 6.  **Verification:** Click the generated links to review the autonomous code fix.
 
 ---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 &copy; 2025 Heisenberg Protocol. All systems operational.
