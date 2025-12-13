@@ -4,7 +4,7 @@
 
 export interface OumiModelStatus {
   model: string;
-  status: 'idle' | 'analyzing' | 'generating' | 'offline';
+  status: "idle" | "analyzing" | "generating" | "offline";
   latency: number;
   tokensProcessed: number;
 }
@@ -17,17 +17,19 @@ export class OumiClient {
   }
 
   async getStatus(): Promise<OumiModelStatus> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
     return {
       model: this.modelName,
-      status: 'idle',
-      latency: Math.floor(Math.random() * 50) + 20, 
-      tokensProcessed: 10000 + Math.floor(Math.random() * 5000)
+      status: "idle",
+      latency: Math.floor(Math.random() * 50) + 20,
+      tokensProcessed: 10000 + Math.floor(Math.random() * 5000),
     };
   }
 
-  async analyzeCode(snippet: string): Promise<{ vulnerability: string; confidence: number }> {
+  async analyzeCode(
+    snippet: string
+  ): Promise<{ vulnerability: string; confidence: number }> {
     if (snippet.includes("SELECT *")) {
       return { vulnerability: "SQL_INJECTION", confidence: 0.98 };
     }

@@ -1,6 +1,6 @@
-import React from 'react';
-import Confetti from 'react-confetti';
-import { useWindowSize } from 'react-use';
+import React from "react";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 interface ConfettiOverlayProps {
   show: boolean;
@@ -12,8 +12,13 @@ export default function ConfettiOverlay({ show }: ConfettiOverlayProps) {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none">
-      <Confetti width={width} height={height} recycle={false} numberOfPieces={500} />
+    <div className="pointer-events-none fixed inset-0 z-50">
+      <Confetti
+        width={width}
+        height={height}
+        recycle={false}
+        numberOfPieces={500}
+      />
     </div>
   );
 }

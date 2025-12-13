@@ -20,14 +20,14 @@ tasks:
     type: io.kestra.plugin.scripts.python.Script
     script: |
       import os
-      
+
       # 1. Get input safely
       target = "{{ trigger.target_url ?? inputs.target_url }}"
-      
+
       # 2. define placeholders to hide braces from Kestra
       OPEN = "{"
       CLOSE = "}"
-      
+
       # 3. The JS Code (Using placeholders instead of real braces)
       # We use __OPEN__ and __CLOSE__ so Kestra's parser stays calm.
       k6_script = """
@@ -44,18 +44,18 @@ tasks:
         check(res, __OPEN__ 'status was 200': (r) => r.status == 200 __CLOSE__);
         sleep(1);
       __CLOSE__
-      
+
       export function handleSummary(data) __OPEN__
         return __OPEN__ 'summary.json': JSON.stringify(data) __CLOSE__;
       __CLOSE__
       """
-      
+
       # 4. Reconstruct the real script
       final_script = k6_script.replace("__OPEN__", OPEN).replace("__CLOSE__", CLOSE).replace("TARGET_URL", target)
-      
+
       with open("attack.js", "w") as f:
           f.write(final_script)
-      
+
       os.chmod("attack.js", 0o777)
     outputFiles:
       - attack.js
@@ -88,7 +88,7 @@ tasks:
           print(f"::POUT key=resilience_score::{score}")
       except:
           print("::POUT key=resilience_score::0")
-  
+
   - id: autonomous_fix_agent
     type: io.kestra.plugin.scripts.python.Script
     script: |
@@ -96,7 +96,7 @@ tasks:
       import json
       import base64
       import time
-      
+
       # --- CONFIGURATION ---
       TOKEN = "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"
       REPO = "{{ trigger.repo_name ?? inputs.repo_name }}"
@@ -129,7 +129,7 @@ tasks:
           "title": "🚨 Heisenberg Alert: Critical Vulnerability Detected",
           "body": "Heisenberg Protocol detected a 500 Error spike on /api/victim.\n\n**Recommendation:** Implement Rate Limiting immediately."
       })
-      
+
       issue_number = issue['number'] if issue else "UNKNOWN"
       print(f"✅ Issue Created: #{issue_number}")
 
@@ -154,10 +154,10 @@ tasks:
       # 3. Create the "Fix" file (Simulating an AI-generated Rate Limiter)
       fix_content = """
       import { NextResponse } from 'next/server';
-      
+
       // Heisenberg Auto-Generated Rate Limiter
       // Applied to mitigate DDoS vector detected in /api/victim
-      
+
       const RATE_LIMIT = 10;
       const WINDOW = 60 * 1000; // 1 minute
       const ipMap = new Map();
@@ -182,7 +182,7 @@ tasks:
           }
       }
       """
-      
+
       print("💾 Committing patch: middleware.ts...")
       github_request(f"/contents/middleware.ts", "PUT", {
           "message": f"feat: apply rate limiting (Fixes #{issue_number})",

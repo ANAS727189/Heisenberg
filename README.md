@@ -40,11 +40,13 @@ The platform features a high-fidelity "Command Center" dashboard that provides r
 ## Key Features
 
 ### 1. Autonomous Chaos Injection
+
 - **Engine:** Powered by **Grafana k6** running in isolated Docker containers.
 - **Operation:** Simulates high-concurrency DDoS and stress attacks to identify system breaking points.
 - **Metrics:** Captures latency, error rates, and throughput in real-time.
 
 ### 2. Self-Healing Infrastructure
+
 - **Detection:** Automatically identifies specific failure modes (e.g., Database Locking, 500 Errors).
 - **Remediation:** The **Autonomous Fix Agent** generates specific patches (e.g., Rate Limiting Middleware).
 - **Deployment:** Automatically creates a Git branch, commits the fix, and opens a detailed Pull Request linked to the vulnerability report.
@@ -52,16 +54,18 @@ The platform features a high-fidelity "Command Center" dashboard that provides r
 ![Vulnerability Alert System](public/dashboard-view.png)
 
 ### 3. Real-Time Command Center
+
 - **Visuals:** A distinct, high-contrast "Newspaper" aesthetic for maximum readability and urgency.
 - **Analytics:** Live `Recharts` visualization of network traffic and threat distribution.
 - **Live Wire:** Real-time terminal logs streaming directly from the orchestration backend.
 - **Alerts:** "Breaking News" marquee system for critical vulnerability announcements.
 
 ### 4. AI & Development
+
 - **AI Engine:** **Oumi SDK** (Python) running `oumi-tuned-7b`.
 - **Agent Protocol:** Custom implementation of the **Cline (Claude Dev) Protocol**.
-    - Uses XML-based reasoning (`<thought>`, `<plan>`, `<attempt_completion>`) to ensure high-quality, secure code generation.
-    - Implements a "Hybrid Mode" that seamlessly switches between GPU-accelerated inference and heuristic fallbacks for demo reliability.
+  - Uses XML-based reasoning (`<thought>`, `<plan>`, `<attempt_completion>`) to ensure high-quality, secure code generation.
+  - Implements a "Hybrid Mode" that seamlessly switches between GPU-accelerated inference and heuristic fallbacks for demo reliability.
 - **Training Data:** Vulnerability datasets structured for Oumi fine-tuning.
 - **Orchestration:** **Kestra** manages the "Attack-Detect-Fix" loop.
 
@@ -71,7 +75,7 @@ The platform features a high-fidelity "Command Center" dashboard that provides r
 
 The system is built on a modern, decoupled architecture ensuring scalability and isolation:
 
-1.  **Frontend (Control Plane):** 
+1.  **Frontend (Control Plane):**
     - Built with **Next.js 15** and **Tailwind CSS**.
     - Handles user interaction, visualization, and real-time polling.
 2.  **Orchestration Layer:**
