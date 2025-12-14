@@ -64,7 +64,7 @@ tasks:
     outputFiles:
       - attack.js
 
-  # STEP 2: Run a short k6 probe (kept minimal to avoid disk/CPU blow-ups)
+  # STEP 2: Run a short k6 probe
   - id: launch_missiles
     type: io.kestra.plugin.docker.Run
     containerImage: grafana/k6:0.54.0
@@ -79,7 +79,7 @@ tasks:
     outputFiles:
       - summary.json
 
-  # STEP 3: Score the run and keep output small
+  # STEP 3: Score the run 
   - id: calculate_score
     type: io.kestra.plugin.scripts.python.Script
     containerImage: python:3.11-slim
@@ -103,13 +103,13 @@ tasks:
           print(f"::POUT key=resilience_score::0")
           print(f"Score calculation failed: {exc}")
 
-  # STEP 4: Optionally create GitHub issue + PR (lightweight, gated by flag and token)
+  # STEP 4: Create GitHub issue + PR
   - id: create_issue_pr
     type: io.kestra.plugin.scripts.python.Script
     containerImage: python:3.11-slim
     env:
-      # Hardcoded per request; rotate this token frequently and avoid committing it to a public repo
-      GITHUB_TOKEN: "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"
+      GITHUB_TOKEN: ""
+      # Use your own token, WHy would I give my token to you. Regards, Anas !
       REPO_NAME: "{{ inputs.repo_name }}"
       CREATE_PR: "{{ inputs.create_pr }}"
     inputFiles:
@@ -227,7 +227,7 @@ tasks:
       if pr:
         print(f"::POUT key=pr_url::{pr.get('html_url')}")
 
-  # STEP 5: Clean temporary artifacts to avoid disk growth
+  # STEP 5: Clean temporary artifacts
   - id: cleanup_artifacts
     type: io.kestra.plugin.scripts.python.Script
     containerImage: python:3.11-slim

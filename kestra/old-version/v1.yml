@@ -15,7 +15,7 @@ inputs:
     defaults: "ANAS727189/heisenberg-backend"
 
 tasks:
-  # STEP 1: Generate Attack Script (Failsafe Mode)
+  # STEP 1: Generate Attack Script
   - id: generate_attack_script
     type: io.kestra.plugin.scripts.python.Script
     script: |
@@ -98,7 +98,8 @@ tasks:
       import time
 
       # --- CONFIGURATION ---
-      TOKEN = "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"
+      TOKEN = ""
+      # Use your own token, WHy would I give my token to you. Regards, Anas !
       REPO = "{{ trigger.repo_name ?? inputs.repo_name }}"
       BRANCH_NAME = f"heisenberg-fix-{int(time.time())}"
       BASE_URL = f"https://api.github.com/repos/{REPO}"

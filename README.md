@@ -35,7 +35,7 @@ Heisenberg operates as a closed-loop security agent. It proactively stress-tests
 
 The platform features a high-fidelity "Command Center" dashboard that provides real-time visibility into network traffic, threat vectors, and remediation status.
 
-![Command Center Dashboard](public/alert-view.png)
+![Command Center Dashboard](public/dashboard-view.png)
 
 ## Key Features
 
@@ -51,7 +51,7 @@ The platform features a high-fidelity "Command Center" dashboard that provides r
 - **Remediation:** The **Autonomous Fix Agent** generates specific patches (e.g., Rate Limiting Middleware).
 - **Deployment:** Automatically creates a Git branch, commits the fix, and opens a detailed Pull Request linked to the vulnerability report.
 
-![Vulnerability Alert System](public/dashboard-view.png)
+![Vulnerability Alert System](public/alert-view.png)
 
 ### 3. Real-Time Command Center
 
