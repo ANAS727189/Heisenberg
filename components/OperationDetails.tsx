@@ -90,7 +90,7 @@ export default function OperationDetails({
         <button
           onClick={startAttack}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 border-2 border-transparent bg-black py-4 text-xl font-bold text-white uppercase transition-all hover:border-black hover:bg-gray-800 hover:bg-white hover:text-black"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 border-2 border-transparent bg-black py-4 text-xl font-bold text-white uppercase transition-all hover:border-black hover:bg-gray-800 hover:bg-white hover:text-black"
         >
           {loading ? <Activity className="animate-spin" /> : <Terminal />}
           {loading ? "Publishing to Wire..." : "Initiate Protocol"}

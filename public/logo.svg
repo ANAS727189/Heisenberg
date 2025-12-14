@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" stroke="black" stroke-width="24" fill="none"/>
+  
+  <!-- The "H" for Heisenberg / Hexagon Structure -->
+  <path d="M166 146V366" stroke="black" stroke-width="32" stroke-linecap="square"/>
+  <path d="M346 146V366" stroke="black" stroke-width="32" stroke-linecap="square"/>
+  <path d="M166 256H346" stroke="black" stroke-width="32"/>
+  
+  <!-- The "Electron" Orbit (Chaos/AI) -->
+  <ellipse cx="256" cy="256" rx="180" ry="60" transform="rotate(45 256 256)" stroke="black" stroke-width="16" stroke-dasharray="40 20"/>
+  <ellipse cx="256" cy="256" rx="180" ry="60" transform="rotate(-45 256 256)" stroke="black" stroke-width="16" stroke-dasharray="40 20"/>
+  
+  <!-- Central Core (The Eye/Agent) -->
+  <circle cx="256" cy="256" r="32" fill="black"/>
+</svg>

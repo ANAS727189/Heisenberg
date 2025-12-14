@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -11,7 +11,32 @@ import {
 import { ShieldAlert } from "lucide-react";
 import { VULNERABILITY_DATA } from "../lib/constants";
 
-export default function ThreatIndex() {
+interface ThreatIndexProps {
+  isActive: boolean;
+}
+
+export default function ThreatIndex({ isActive }: ThreatIndexProps) {
+  const [data, setData] = useState(VULNERABILITY_DATA);
+
+  useEffect(() => {
+    if (!isActive) {
+      // Reset to baseline when not active
+      setData(VULNERABILITY_DATA);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setData((prev) =>
+        prev.map((item) => ({
+          ...item,
+          value: Math.floor(Math.random() * 80) + 20, // Randomize values between 20-100
+        }))
+      );
+    }, 800); // Update every 800ms for a "scanning" effect
+
+    return () => clearInterval(interval);
+  }, [isActive]);
+
   return (
     <div className="border-b-2 border-black pb-4">
       <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold uppercase">
@@ -22,7 +47,7 @@ export default function ThreatIndex() {
         style={{ minHeight: "200px" }}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={VULNERABILITY_DATA}>
+          <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="name"

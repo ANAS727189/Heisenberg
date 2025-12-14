@@ -1,0 +1,241 @@
+id: heisenberg_protocol
+namespace: dev.hackathon
+
+triggers:
+  - id: attack_webhook
+    type: io.kestra.plugin.core.trigger.Webhook
+    key: "my-secret-hackathon-key"
+
+inputs:
+  - id: target_url
+    type: STRING
+    defaults: "https://boom-heisenberg.vercel.app/api/victim"
+  - id: repo_name
+    type: STRING
+    defaults: "ANAS727189/heisenberg-backend"
+  - id: create_pr
+    type: BOOLEAN
+    defaults: true
+
+tasks:
+  # STEP 1: Generate test script
+  - id: generate_attack_script
+    type: io.kestra.plugin.scripts.python.Script
+    containerImage: python:3.11-slim
+    script: |
+      import os
+
+      target = "{{ trigger.target_url ?? inputs.target_url }}"
+
+      OPEN = "{"
+      CLOSE = "}"
+
+      k6_script = """
+      import http from 'k6/http';
+      import __OPEN__ check, sleep __CLOSE__ from 'k6';
+
+      export let options = __OPEN__
+        stages: [__OPEN__ duration: '3s', target: 2 __CLOSE__],
+        thresholds: __OPEN__ 'http_req_failed': ['rate<0.2'] __CLOSE__,
+      __CLOSE__;
+
+      export default function () __OPEN__
+        let res = http.get('TARGET_URL?q=chaos');
+        check(res, __OPEN__ 'status was 200': (r) => r.status === 200 __CLOSE__);
+        sleep(1);
+      __CLOSE__
+
+      export function handleSummary(data) __OPEN__
+        return __OPEN__ 'summary.json': JSON.stringify(data) __CLOSE__;
+      __CLOSE__
+      """
+
+      final_script = (
+          k6_script
+          .replace("__OPEN__", OPEN)
+          .replace("__CLOSE__", CLOSE)
+          .replace("TARGET_URL", target)
+      )
+
+      with open("attack.js", "w") as f:
+          f.write(final_script)
+
+      os.chmod("attack.js", 0o755)
+    outputFiles:
+      - attack.js
+
+  # STEP 2: Run a short k6 probe (kept minimal to avoid disk/CPU blow-ups)
+  - id: launch_missiles
+    type: io.kestra.plugin.docker.Run
+    containerImage: grafana/k6:0.54.0
+    user: root
+    allowFailure: true
+    commands:
+      - run
+      - "--summary-export={{ workingDir }}/summary.json"
+      - "{{ workingDir }}/attack.js"
+    inputFiles:
+      attack.js: "{{ outputs.generate_attack_script.outputFiles['attack.js'] }}"
+    outputFiles:
+      - summary.json
+
+  # STEP 3: Score the run and keep output small
+  - id: calculate_score
+    type: io.kestra.plugin.scripts.python.Script
+    containerImage: python:3.11-slim
+    inputFiles:
+      summary.json: "{{ outputs.launch_missiles.outputFiles['summary.json'] }}"
+    outputFiles:
+      - score.txt
+    script: |
+      import json
+      try:
+          with open("summary.json", "r") as f:
+              data = json.load(f)
+          fail_rate = data['metrics']['http_req_failed']['values']['rate']
+          score = int((1.0 - fail_rate) * 100)
+          with open("score.txt", "w") as sf:
+              sf.write(str(score))
+          print(f"::POUT key=resilience_score::{score}")
+      except Exception as exc:  # keep output predictable
+          with open("score.txt", "w") as sf:
+              sf.write("0")
+          print(f"::POUT key=resilience_score::0")
+          print(f"Score calculation failed: {exc}")
+
+  # STEP 4: Optionally create GitHub issue + PR (lightweight, gated by flag and token)
+  - id: create_issue_pr
+    type: io.kestra.plugin.scripts.python.Script
+    containerImage: python:3.11-slim
+    env:
+      # Hardcoded per request; rotate this token frequently and avoid committing it to a public repo
+      GITHUB_TOKEN: "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"
+      REPO_NAME: "{{ inputs.repo_name }}"
+      CREATE_PR: "{{ inputs.create_pr }}"
+    inputFiles:
+      summary.json: "{{ outputs.launch_missiles.outputFiles['summary.json'] }}"
+      score.txt: "{{ outputs.calculate_score.outputFiles['score.txt'] }}"
+    script: |
+      import json
+      import os
+      import base64
+      import urllib.request
+      import time
+
+      create_pr = os.getenv("CREATE_PR", "false").lower() == "true"
+      token = os.getenv("GITHUB_TOKEN")
+      repo = os.getenv("REPO_NAME")
+
+      if not create_pr:
+        print("PR creation disabled; skipping.")
+        raise SystemExit(0)
+
+      if not token:
+        print("No GITHUB_TOKEN provided; skipping PR/issue.")
+        raise SystemExit(0)
+
+      # Read score and summary
+      try:
+        with open("score.txt", "r") as f:
+          score = int(f.read().strip())
+      except Exception:
+        score = 0
+
+      try:
+        with open("summary.json", "r") as f:
+          summary = json.load(f)
+      except Exception as exc:
+        print(f"Failed to load summary.json: {exc}")
+        summary = {}
+
+      # Prepare GitHub client
+      base_url = f"https://api.github.com/repos/{repo}"
+      headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      }
+
+      def request(endpoint, method="GET", payload=None):
+        req = urllib.request.Request(url=base_url + endpoint, method=method)
+        for k, v in headers.items():
+          req.add_header(k, v)
+        if payload is not None:
+          req.data = json.dumps(payload).encode("utf-8")
+        with urllib.request.urlopen(req) as res:
+          return json.loads(res.read().decode())
+
+      # Build richer issue body with key metrics
+      http_metrics = summary.get("metrics", {}).get("http_req_duration", {}).get("values", {})
+      p95 = http_metrics.get("p(95)")
+      failed_rate = summary.get("metrics", {}).get("http_req_failed", {}).get("values", {}).get("rate")
+      total_reqs = summary.get("metrics", {}).get("http_reqs", {}).get("values", {}).get("count")
+
+      lines = [
+        "## Resilience Report",
+        f"- Score: {score}",
+        f"- Failed rate: {failed_rate if failed_rate is not None else 'n/a'}",
+        f"- p95 latency: {p95 if p95 is not None else 'n/a'}",
+        f"- Total requests: {total_reqs if total_reqs is not None else 'n/a'}",
+        "- Source: Kestra flow",
+      ]
+      issue_body = "\n".join(lines)
+
+      issue = request("/issues", method="POST", payload={
+        "title": f"Resilience score: {score}",
+        "body": issue_body,
+        "labels": ["kestra", "resilience"],
+      })
+
+      # Create branch off default
+      repo_info = request("")
+      default_branch = repo_info.get("default_branch", "main")
+      ref_info = request(f"/git/ref/heads/{default_branch}")
+      latest_sha = ref_info["object"]["sha"]
+
+      branch_name = f"heisenberg-fix-{score}-{int(time.time())}"
+      request("/git/refs", method="POST", payload={
+        "ref": f"refs/heads/{branch_name}",
+        "sha": latest_sha,
+      })
+
+      # Create a meaningful report file with summary
+      report = {
+        "score": score,
+        "failed_rate": failed_rate,
+        "p95": p95,
+        "total_requests": total_reqs,
+      }
+      content = "// Auto-generated resilience report\n" + json.dumps(report, indent=2)
+      b64_content = base64.b64encode(content.encode()).decode()
+
+      request(f"/contents/RESILIENCE_REPORT.json", method="PUT", payload={
+        "message": "chore: add resilience report from Kestra",
+        "content": b64_content,
+        "branch": branch_name,
+      })
+
+      pr = request("/pulls", method="POST", payload={
+        "title": f"Resilience Score {score} (Kestra)",
+        "body": issue_body,
+        "head": branch_name,
+        "base": default_branch,
+      })
+
+      if issue:
+        print(f"::POUT key=issue_url::{issue.get('html_url')}")
+      if pr:
+        print(f"::POUT key=pr_url::{pr.get('html_url')}")
+
+  # STEP 5: Clean temporary artifacts to avoid disk growth
+  - id: cleanup_artifacts
+    type: io.kestra.plugin.scripts.python.Script
+    containerImage: python:3.11-slim
+    script: |
+      import os
+      for fname in ("attack.js", "summary.json", "score.txt"):
+          try:
+              os.remove(fname)
+              print(f"removed {fname}")
+          except FileNotFoundError:
+              pass

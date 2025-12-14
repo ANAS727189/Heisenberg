@@ -39,19 +39,25 @@ export default function Home() {
   useEffect(() => {
     const interval = setInterval(() => {
       setTrafficData((prev) => {
+        // If attack is running (loading=true), generate chaos.
+        // If idle, generate low "heartbeat" traffic.
+        const baseRequests = loading ? 150 : 10;
+        const variance = loading ? 100 : 5;
+        const baseLatency = loading ? 200 : 20;
+
         const newData = [
           ...prev.slice(1),
           {
             time: prev[prev.length - 1].time + 1,
-            requests: Math.floor(Math.random() * 100) + 50,
-            latency: Math.floor(Math.random() * 50) + 10,
+            requests: Math.floor(Math.random() * variance) + baseRequests,
+            latency: Math.floor(Math.random() * (loading ? 100 : 10)) + baseLatency,
           },
         ];
         return newData;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loading]);
 
   const startAttack = async () => {
     setLoading(true);
@@ -157,7 +163,7 @@ export default function Home() {
         {/* Left Column - Analytics & Graphs */}
         <div className="space-y-8 lg:col-span-3">
           <MarketWatch trafficData={trafficData} />
-          <ThreatIndex />
+          <ThreatIndex isActive={loading} />
           <SystemIntelligence />
         </div>
 

@@ -8,7 +8,8 @@ export default function Header() {
         <span>{new Date().toLocaleDateString()}</span>
         <span>Price: Free</span>
       </div>
-      <h1 className="mb-2 text-6xl font-black tracking-tighter uppercase md:text-9xl">
+      <h1 className="mb-2 flex items-center justify-center gap-4 text-6xl font-black tracking-tighter uppercase md:text-9xl">
+        <img src="/logo.svg" alt="Logo" className="h-16 w-16 md:h-32 md:w-32" />
         The Heisenberg
       </h1>
       <div className="mt-2 flex items-center justify-center gap-4 border-t border-black pt-2 text-center text-xl font-bold italic">
